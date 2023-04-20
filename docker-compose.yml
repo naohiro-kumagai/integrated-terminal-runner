@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  app: &nuxt
+    image: node:18.14.0-slim
+    # image: mcr.microsoft.com/playwright:v1.32.1-focal
+    # command: sh -c "npm i && rm -rf /tmp/nitro/worker-* && npm run dev"
+    working_dir: $PWD
+    # privileged: true
+    tty: true
+    user: node
+    # user: pwuser
+    network_mode: "host"
+    # ports:
+    #   - "3000:3000"
+    #   - "24678:24678"
+    environment:
+      TZ: 'Asia/Tokyo'
+      DISPLAY: $DISPLAY
+    volumes:
+      - type: bind
+        source: "."
+        target: "$PWD"
+
+  # --- test ---
+  test:
+    <<: *nuxt
+    command: ["npm", "run", "test:watch"]
+    ports: []
+
+# networks:
+#   default:
+#     driver: bridge
+#     driver_opts:
+#       com.docker.network.driver.mtu: ${MTU:-1258}
