@@ -40,13 +40,13 @@ export function activate(context: vscode.ExtensionContext) {
       editor.edit((editBuilder) => {
         editBuilder.insert(new vscode.Position(editor.document.lineCount - 1, 0), `$ ${command.toString()}`); // コマンドを表示
         editBuilder.insert(new vscode.Position(editor.document.lineCount - 1, 0), '\n');
-      });
 
-      editor.edit((editBuilder) => {
         editBuilder.insert(
           new vscode.Position(editor.document.lineCount - 1, 0), // 最後の行
           data.toString() // 出力結果
         );
+        console.log(data.toString());
+
         // 空行を入れる
         editBuilder.insert(new vscode.Position(editor.document.lineCount - 1, 0), '\n');
       });
@@ -60,8 +60,8 @@ export function activate(context: vscode.ExtensionContext) {
       terminal.sendText(data.toString());
     });
 
-    childProcess.on('exit', () => {
-      // vscode.window.showInformationMessage('Command has been executed');
+    childProcess.on('close', () => {
+      vscode.window.showInformationMessage('Command has been executed');
 
       editor.edit((editBuilder) => {
         // 最後の行を削除
