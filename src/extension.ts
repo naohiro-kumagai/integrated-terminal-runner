@@ -16,10 +16,11 @@ export function activate(context: vscode.ExtensionContext) {
       vscode.window.showInformationMessage('No editor is active');
       return;
     }
-    // エディターの選択範囲を取得する
+    // フォーカスしている行のテキストを取得する
     const selection = editor.selection;
     const line = editor.document.lineAt(selection.start.line);
-    const command = line.text;
+    const command = line.text.replace(/^\$/, '');
+    // command.replace(/^\$/, ''); // 取得したコマンドから先頭の$を削除する
 
     vscode.window.showInformationMessage(command.toString());
 
@@ -35,37 +36,40 @@ export function activate(context: vscode.ExtensionContext) {
     const childProcess = spawn(`cd ${currentPath} && ${command}`, [], { shell: true });
     // const childProcess = terminal.sendText(command.toString());
 
+    let output = '';
     // 出力結果をエディターに表示する
     childProcess.stdout.on('data', (data: Buffer) => {
+      output += data.toString();
+    });
+
+    childProcess.stderr.on('data', (data: Buffer) => {
+      console.error(data.toString());
+
+      output += data.toString();
+    });
+
+    // コマンド実行後の処理
+    childProcess.on('close', () => {
+      vscode.window.showInformationMessage('Command has been executed');
+
       editor.edit((editBuilder) => {
         editBuilder.insert(new vscode.Position(editor.document.lineCount - 1, 0), `$ ${command.toString()}`); // コマンドを表示
         editBuilder.insert(new vscode.Position(editor.document.lineCount - 1, 0), '\n');
 
         editBuilder.insert(
           new vscode.Position(editor.document.lineCount - 1, 0), // 最後の行
-          data.toString() // 出力結果
+          output.toString() // 出力結果
         );
-        console.log(data.toString());
+        console.log(output.toString());
 
         // 空行を入れる
         editBuilder.insert(new vscode.Position(editor.document.lineCount - 1, 0), '\n');
-      });
-    });
 
+        // 実行したコマンド業を削除する
+        const lastLine = editor.document.lineAt(editor.document.lineCount - 1);
+        editBuilder.delete(lastLine.range);
 
-    // childProcess.stdout.on('data', (data: Buffer) => {
-    //   terminal.sendText(data.toString());
-    // });
-    childProcess.stderr.on('data', (data: Buffer) => {
-      terminal.sendText(data.toString());
-    });
-
-    childProcess.on('close', () => {
-      vscode.window.showInformationMessage('Command has been executed');
-
-      editor.edit((editBuilder) => {
-        // 最後の行を削除
-        editBuilder.delete(new vscode.Range(new vscode.Position(editor.document.lineCount - 1, 0), new vscode.Position(editor.document.lineCount - 1, 100)));
+        editBuilder.insert(new vscode.Position(editor.document.lineCount - 1, 0), '$ ');
       });
     });
   });
